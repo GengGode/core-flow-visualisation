@@ -1,7 +1,7 @@
-add_executable(cpp_gui_cmake_project_template.app)
+add_executable(core-flow-visualisation.app)
 
 if (MSVC)
-    target_compile_options(cpp_gui_cmake_project_template.app
+    target_compile_options(core-flow-visualisation.app
         PRIVATE
             $<$<COMPILE_LANGUAGE:CXX>:/utf-8>
             # $<$<COMPILE_LANGUAGE:CXX>:/Zc:char8_t->
@@ -9,7 +9,7 @@ if (MSVC)
             $<$<COMPILE_LANGUAGE:CXX>:/std:c++23preview>
     )
 elseif (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-    target_compile_options(cpp_gui_cmake_project_template.app
+    target_compile_options(core-flow-visualisation.app
         PRIVATE
             $<$<COMPILE_LANGUAGE:CXX>:-Wall>
             $<$<COMPILE_LANGUAGE:CXX>:-Wextra>
@@ -21,20 +21,20 @@ elseif (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 endif()
 
 
-target_include_directories(cpp_gui_cmake_project_template.app
+target_include_directories(core-flow-visualisation.app
     PRIVATE
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
         $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>
         $<INSTALL_INTERFACE:include>
 )
 
-target_sources(cpp_gui_cmake_project_template.app
+target_sources(core-flow-visualisation.app
     PRIVATE
         app.cpp
 )
 
 find_package(global_utils CONFIG REQUIRED)
-target_link_libraries(cpp_gui_cmake_project_template.app
+target_link_libraries(core-flow-visualisation.app
     PRIVATE
         global_utils::global_utils
 )
@@ -47,7 +47,7 @@ find_package(implot CONFIG REQUIRED)
 find_package(TBB CONFIG REQUIRED)
 find_package(fmt CONFIG REQUIRED)
 find_package(spdlog CONFIG REQUIRED)
-target_link_libraries(cpp_gui_cmake_project_template.app PRIVATE 
+target_link_libraries(core-flow-visualisation.app PRIVATE 
         $<$<PLATFORM_ID:Windows>:opengl32>
         glfw
         glm::glm
@@ -59,7 +59,7 @@ target_link_libraries(cpp_gui_cmake_project_template.app PRIVATE
         spdlog::spdlog_header_only
 )
 find_package(OpenCV REQUIRED)
-target_link_libraries(cpp_gui_cmake_project_template.app PRIVATE
+target_link_libraries(core-flow-visualisation.app PRIVATE
         opencv_core
         opencv_imgproc
 )

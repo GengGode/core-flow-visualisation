@@ -14,6 +14,7 @@ struct runtime_visualizer
     ~runtime_visualizer();
     void initialize(bool sync_wait = false);
     void destroy();
+    void register_initialize(std::function<void()> func);
     void register_destroy(std::function<void()> func);
     void main_render(std::function<void()> func);
     void main_enqueue(std::function<void()> func);
@@ -47,12 +48,14 @@ struct runtime_visualizer
     #else
         #error "<tbb/concurrent_queue.h> is required for runtime_visualizer implementation"
     #endif
-    #if __has_include(<spdlog/spdlog.h>)
+    #if __has_include(<spdlog/spdlog.h>) && RUNTIME_VISUALIZER_ENABLE_LOGGING
         #include <spdlog/spdlog.h>
     #else
         #define SPDLOG_ERROR(...) ((void)0)
         #define SPDLOG_INFO(...) ((void)0)
-        #warning "<spdlog/spdlog.h> not found, logging disabled in runtime_visualizer implementation"
+        #if RUNTIME_VISUALIZER_ENABLE_LOGGING
+            #warning "<spdlog/spdlog.h> not found, logging disabled in runtime_visualizer implementation"
+        #endif
     #endif
     #if defined(_WIN32) || defined(_WIN64)
         #ifndef WIN32_LEAN_AND_MEAN
@@ -77,6 +80,7 @@ struct runtime_visualizer
 struct runtime_visualizer::impl_t
 {
     tbb::concurrent_queue<std::function<void()>> main_queue = {};
+    tbb::concurrent_queue<std::function<void()>> initialize_queue = {};
     tbb::concurrent_queue<std::function<void()>> destroy_queue = {};
 
     std::function<void()> main_render_func = {};
@@ -126,11 +130,16 @@ struct runtime_visualizer::impl_t
         ImGuiIO& io = ImGui::GetIO();
         io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard; // Enable Keyboard Controls
         io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;  // Enable Gamepad Controls
+        io.IniFilename = nullptr;                             // disable imgui.ini
         io.Fonts->AddFontFromFileTTF("c:\\Windows\\Fonts\\msyh.ttc", 20.0f, nullptr, io.Fonts->GetGlyphRangesChineseFull());
+
+        std::function<void()> task;
+        while (initialize_queue.try_pop(task) && task)
+            task();
         return nullptr;
     }
 
-    void render_loop(tbb::concurrent_queue<std::function<void()>>& queue)
+    void render_loop()
     {
         while (running)
         {
@@ -144,7 +153,7 @@ struct runtime_visualizer::impl_t
             }
 
             std::function<void()> task;
-            while (queue.try_pop(task) && task)
+            while (main_queue.try_pop(task) && task)
                 task();
 
             ImGui_ImplOpenGL3_NewFrame();
@@ -212,7 +221,7 @@ void runtime_visualizer::initialize(bool sync_wait)
             return;
         }
         latch ? latch->count_down() : void();
-        impl->render_loop(impl->main_queue);
+        impl->render_loop();
         impl->render_destroy();
         impl->running = false;
     });
@@ -224,6 +233,10 @@ void runtime_visualizer::destroy()
         impl->running = false;
     if (impl->render_thread.joinable())
         impl->render_thread.join();
+}
+void runtime_visualizer::register_initialize(std::function<void()> func)
+{
+    impl->initialize_queue.push(func);
 }
 void runtime_visualizer::register_destroy(std::function<void()> func)
 {
