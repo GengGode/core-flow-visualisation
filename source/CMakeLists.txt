@@ -58,8 +58,11 @@ target_link_libraries(core-flow-visualisation.app PRIVATE
         fmt::fmt-header-only
         spdlog::spdlog_header_only
 )
-find_package(OpenCV REQUIRED)
+find_package(OpenCV CONFIG REQUIRED)
+find_package(reflectcpp CONFIG REQUIRED)
 target_link_libraries(core-flow-visualisation.app PRIVATE
         opencv_core
         opencv_imgproc
+
+        reflectcpp::reflectcpp
 )
